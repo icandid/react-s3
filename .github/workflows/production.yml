@@ -1,4 +1,4 @@
-name: Production Build
+name: Continuous Deployment
 
 on:
   # pull_request:
@@ -10,39 +10,23 @@ on:
     # paths:
     #   - "frontend/**"
 jobs:
-  set-environment:
+  get-environment:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-
-      - name: Extract branch name
-        shell: bash
-        # run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        run: echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-        id: extract-branch
-
-      - name: Set environment
+      - name: Map branch to enviroment
         id: set-env
         run: |
-          BRANCH=${{ steps.extract-branch.outputs.name }}
+          BRANCH=${GITHUB_REF#refs/heads/}
           if [ "$BRANCH" = "main" ]; then
-            echo "name=production" >> $GITHUB_OUTPUT
+            echo "name=development" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "staging" ]; then
+            echo "env_name=staging" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "production" ]; then
+            echo "env_name=production" >> $GITHUB_OUTPUT
           fi
-
     outputs:
       name: ${{ steps.set-env.outputs.name }}
-
-      # run: |
-      #   BRANCH=${{ steps.extract_branch.outputs.branch }}
-      #   echo "Running on branch $BRANCH"
-      #   if [ "$BRANCH" = "main" ]; then
-      #     echo "env_name=development" >> $GITHUB_OUTPUT
-      #   elif [ "$BRANCH" = "staging" ]; then
-      #     echo "env_name=staging" >> $GITHUB_OUTPUT
-      #   elif [ "$BRANCH" = "production" ]; then
-      #     echo "env_name=production" >> $GITHUB_OUTPUT
-      #   fi
 
   # release:
   #   needs: [set-environment]
@@ -61,10 +45,10 @@ jobs:
   #         echo "${{secrets.TEST_SECRET }}" | sed 's/./& /g'
 
   deploy-frontend:
-    needs: [set-environment]
+    needs: [get-environment]
     runs-on: ubuntu-latest
     environment:
-      name: ${{ needs.set-environment.outputs.name }}
+      name: ${{ needs.get-environment.outputs.name }}
 
     #   strategy:
     #     matrix:
@@ -85,13 +69,13 @@ jobs:
       # - name: Unit Test
       #   run: |
       #     npm run test
-      - name: Test Secret
+      # - name: Test Secret
+      #   run: |
+      #     echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
+      - name: Deploy to S3
         run: |
-          echo "I am deploying on environment ${{ needs.set-environment.outputs.name }}"
-          echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
-  # - name: Deploy to S3
-  #   run: |
-  #     aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
+          echo "Deploying on environment ${{ needs.get-environment.outputs.name }}"
+          aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
   #   env:
   #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
