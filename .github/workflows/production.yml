@@ -4,9 +4,9 @@ on:
   # pull_request:
   push:
     branches:
-      - main
-      - staging
       - production
+      - staging
+      - develop
     # paths:
     #   - "frontend/**"
 jobs:
@@ -18,51 +18,33 @@ jobs:
         id: set-env
         run: |
           BRANCH=${GITHUB_REF#refs/heads/}
-          if [ "$BRANCH" = "main" ]; then
-            echo "name=development" >> $GITHUB_OUTPUT
+          if [ "$BRANCH" = "production" ]; then
+            echo "name=production" >> $GITHUB_OUTPUT
           elif [ "$BRANCH" = "staging" ]; then
-            echo "env_name=staging" >> $GITHUB_OUTPUT
-          elif [ "$BRANCH" = "production" ]; then
-            echo "env_name=production" >> $GITHUB_OUTPUT
+            echo "name=staging" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "develop" ]; then
+            echo "name=development" >> $GITHUB_OUTPUT
           fi
     outputs:
       name: ${{ steps.set-env.outputs.name }}
-
-  # release:
-  #   needs: [set-environment]
-  #   name: Release some stuff
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: ${{ needs.set-environment.outputs.env_name }}
-
-  #   steps:
-  #     - name: Deploy
-  #       run: |
-  #         echo "I am deploying on environment ${{ needs.set-environment.outputs.env_name }}"
-  #         temp=$(echo "${{ secrets.TEST_SECRET }}" | base64)
-  #     - name: Test Secret
-  #       run: |
-  #         echo "${{secrets.TEST_SECRET }}" | sed 's/./& /g'
 
   deploy-frontend:
     needs: [get-environment]
     runs-on: ubuntu-latest
     environment:
       name: ${{ needs.get-environment.outputs.name }}
-
-    #   strategy:
-    #     matrix:
-    #       node-version: [16.x]
-
+    strategy:
+      matrix:
+        node-version: [16.x]
     steps:
       - uses: actions/checkout@v3
-      # - name: Use Node.js ${{ matrix.node-version }}
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: ${{ matrix.node-version }}
-      # - name: NPM Install
-      #   run: |
-      #     cd frontend && npm install
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: NPM Install
+        run: |
+          cd frontend && npm install
       # - name: Production Build
       #   run: |
       #     cd frontend && npm run build
@@ -76,7 +58,7 @@ jobs:
         run: |
           echo "Deploying on environment ${{ needs.get-environment.outputs.name }}"
           aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
