@@ -26,12 +26,11 @@ jobs:
         id: set-env
         run: |
           BRANCH=${{ steps.extract-branch.outputs.name }}
-          echo $BRANCH
           echo "Running on branch $BRANCH"
           if [ "$BRANCH" = "main" ]; then
-            ENV=development
+            echo "env=production" >> $GITHUB_OUTPUT
           fi
-          echo "env=$ENV" >> $GITHUB_OUTPUT
+
       # run: |
       #   BRANCH=${{ steps.extract_branch.outputs.branch }}
       #   echo "Running on branch $BRANCH"
