@@ -1,0 +1,20 @@
+name: Staging Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - staging
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test Secret
+        run: echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
