@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "service_A/**"
+      - "frontend/**"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,18 +24,18 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: NPM Install
         run: |
-          npm install
+          cd frontend && npm install
       - name: Production Build
         run: |
-          npm run build
+          cd frontend && npm run build
       # - name: Unit Test
       #   run: |
       #     npm run test
-      - name: Test Secret
-        run: echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
+      # - name: Test Secret
+      #   run: echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
       - name: Deploy to S3
         run: |
-          aws s3 sync ./build ${{ secrets.AWS_BUCKET_NAME }}
+          aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
