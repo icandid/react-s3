@@ -1,16 +1,63 @@
 name: Production Build
 
 on:
-  pull_request:
+  # pull_request:
   push:
     branches:
       - main
-    paths:
-      - "frontend/**"
+      - staging
+    # paths:
+    #   - "frontend/**"
 jobs:
-  build:
+  set_environment:
     runs-on: ubuntu-latest
-    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Set env_name
+        id: branch_check
+        run: |
+          echo "Running on branch ${{ steps.extract_branch.outputs.branch }}"
+          if [ "${{ steps.extract_branch.outputs.branch }}" = "main" ]; then
+            echo "::set-output name=env_name::production"
+          elif [ "${{ steps.extract_branch.outputs.branch }}" = "staging" ]; then
+            echo "::set-output name=env_name::staging"
+          elif [ "${{ steps.extract_branch.outputs.branch }}" = "staging" ]; then
+            echo "::set-output name=env_name::staging"
+          else
+             echo "::set-output name=env_name::features"
+          fi
+
+    outputs:
+      env_name: ${{ steps.branch_check.outputs.env_name }}
+
+  # release:
+  #   needs: [set_environment]
+  #   name: Release some stuff
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: ${{ needs.set_environment.outputs.env_name }}
+
+  #   steps:
+  #     - name: Deploy
+  #       run: |
+  #         echo "I am deploying on environment ${{ needs.set_environment.outputs.env_name }}"
+  #         temp=$(echo "${{ secrets.TEST_SECRET }}" | base64)
+  #     - name: Test Secret
+  #       run: |
+  #         echo "${{secrets.TEST_SECRET }}" | sed 's/./& /g'
+
+  deploy-frontend:
+    needs: [set_environment]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.set_environment.outputs.env_name }}
 
     strategy:
       matrix:
@@ -18,25 +65,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: NPM Install
-        run: |
-          cd frontend && npm install
-      - name: Production Build
-        run: |
-          cd frontend && npm run build
+      # - name: Use Node.js ${{ matrix.node-version }}
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: ${{ matrix.node-version }}
+      # - name: NPM Install
+      #   run: |
+      #     cd frontend && npm install
+      # - name: Production Build
+      #   run: |
+      #     cd frontend && npm run build
       # - name: Unit Test
       #   run: |
       #     npm run test
-      # - name: Test Secret
-      #   run: echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
-      - name: Deploy to S3
+      - name: Test Secret
         run: |
-          aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          echo "I am deploying on environment ${{ needs.set_environment.outputs.env_name }}"
+          echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
+      # - name: Deploy to S3
+      #   run: |
+      #     aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
