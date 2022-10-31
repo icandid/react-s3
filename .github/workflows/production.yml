@@ -10,23 +10,23 @@ on:
     # paths:
     #   - "frontend/**"
 jobs:
-  # get-environment:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Map branch to enviroment
-  #       id: set-env
-  #       run: |
-  #         BRANCH=${GITHUB_REF#refs/heads/}
-  #         if [ "$BRANCH" = "production" ]; then
-  #           echo "name=production" >> $GITHUB_OUTPUT
-  #         elif [ "$BRANCH" = "staging" ]; then
-  #           echo "name=staging" >> $GITHUB_OUTPUT
-  #         elif [ "$BRANCH" = "develop" ]; then
-  #           echo "name=development" >> $GITHUB_OUTPUT
-  #         fi
-  #   outputs:
-  #     name: ${{ steps.set-env.outputs.name }}
+  get-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Map branch to enviroment
+        id: set-env
+        run: |
+          BRANCH=${GITHUB_REF#refs/heads/}
+          if [ "$BRANCH" = "production" ]; then
+            echo "name=production" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "staging" ]; then
+            echo "name=staging" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH" = "develop" ]; then
+            echo "name=development" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      name: ${{ steps.set-env.outputs.name }}
 
   # build:
   #   needs: [get-environment]
@@ -39,10 +39,10 @@ jobs:
 
   deploy-frontend:
     # if: false
-    # needs: [get-environment]
+    needs: [get-environment]
     runs-on: ubuntu-latest
-    # environment:
-    #   name: ${{ needs.get-environment.outputs.name }}
+    environment:
+      name: ${{ needs.get-environment.outputs.name }}
     # strategy:
     #   matrix:
     #     node-version: [16.x]
