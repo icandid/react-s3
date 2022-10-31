@@ -1,7 +1,9 @@
 name: Continuous Deployment
 
 on:
-  pull_request:
+  # pull_request:
+  #   branches:
+  #     - develop
   push:
     branches:
       # - production
