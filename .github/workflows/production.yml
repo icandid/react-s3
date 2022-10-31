@@ -1,64 +1,76 @@
 name: Continuous Deployment
 
 on:
-  # pull_request:
+  pull_request:
   push:
     branches:
-      - production
-      - staging
+      # - production
+      # - staging
       - develop
     # paths:
     #   - "frontend/**"
 jobs:
-  get-environment:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Map branch to enviroment
-        id: set-env
-        run: |
-          BRANCH=${GITHUB_REF#refs/heads/}
-          if [ "$BRANCH" = "production" ]; then
-            echo "name=production" >> $GITHUB_OUTPUT
-          elif [ "$BRANCH" = "staging" ]; then
-            echo "name=staging" >> $GITHUB_OUTPUT
-          elif [ "$BRANCH" = "develop" ]; then
-            echo "name=development" >> $GITHUB_OUTPUT
-          fi
-    outputs:
-      name: ${{ steps.set-env.outputs.name }}
+  # get-environment:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Map branch to enviroment
+  #       id: set-env
+  #       run: |
+  #         BRANCH=${GITHUB_REF#refs/heads/}
+  #         if [ "$BRANCH" = "production" ]; then
+  #           echo "name=production" >> $GITHUB_OUTPUT
+  #         elif [ "$BRANCH" = "staging" ]; then
+  #           echo "name=staging" >> $GITHUB_OUTPUT
+  #         elif [ "$BRANCH" = "develop" ]; then
+  #           echo "name=development" >> $GITHUB_OUTPUT
+  #         fi
+  #   outputs:
+  #     name: ${{ steps.set-env.outputs.name }}
+
+  # build:
+  #   needs: [get-environment]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Deploy to S3
+  #       run: |
+  #         echo "Deploying on environment ${{ needs.get-environment.outputs.name }}"
 
   deploy-frontend:
-    needs: [get-environment]
+    # if: false
+    # needs: [get-environment]
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ needs.get-environment.outputs.name }}
-    strategy:
-      matrix:
-        node-version: [16.x]
+    # environment:
+    #   name: ${{ needs.get-environment.outputs.name }}
+    # strategy:
+    #   matrix:
+    #     node-version: [16.x]
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: NPM Install
+      - name: Test Secret
         run: |
-          cd frontend && npm install
+          echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
+      # - name: Use Node.js ${{ matrix.node-version }}
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: ${{ matrix.node-version }}
+      # - name: NPM Install
+      #   run: |
+      #     cd frontend && npm install
       # - name: Production Build
       #   run: |
       #     cd frontend && npm run build
       # - name: Unit Test
       #   run: |
       #     npm run test
-      # - name: Test Secret
+      # - name:
+      #     Deploy to S3
+      #     echo "Deploying on environment ${{ needs.get-environment.outputs.name }}"
       #   run: |
-      #     echo ${{secrets.TEST_SECRET }} | sed 's/./& /g'
-      - name: Deploy to S3
-        run: |
-          echo "Deploying on environment ${{ needs.get-environment.outputs.name }}"
-          aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      #     aws s3 sync ./frontend/build ${{ secrets.AWS_BUCKET_NAME }}
+      #     aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths '/*'
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
