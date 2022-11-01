@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - develop
-    # paths:
-    # - "backend/**"
+    paths:
+      - "backend/**"
 
 jobs:
   build:
@@ -15,6 +15,7 @@ jobs:
       name: development
 
     steps:
+      - if: false
       - name: Check out code
         uses: actions/checkout@v3
 
