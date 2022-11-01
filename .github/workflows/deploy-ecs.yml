@@ -47,5 +47,5 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ secrets.ECS_SERVICE }}
-          cluster: ${{ secreats.ECS_CLUSTER }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
