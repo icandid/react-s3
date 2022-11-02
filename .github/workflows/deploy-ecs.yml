@@ -6,6 +6,10 @@ on:
       - develop
   # manually triggers it
   workflow_dispatch:
+    environment:
+      description: "Environment to run tests against"
+      type: environment
+      required: true
 
 jobs:
   build:
@@ -50,3 +54,8 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: false
           force-new-deployment: true
+
+      - name: Stop ECS old task
+        run: |
+          OLD_TASK_ARN=$(aws ecs list-tasks --cluster "development-seqwater-api" --service "development-seqwater-api" --output text --query taskArns)
+          aws ecs stop-task --cluster development-seqwater-api --task ${OLD_TASK_ARN}
